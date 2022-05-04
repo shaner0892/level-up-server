@@ -61,6 +61,31 @@ class GameView(ViewSet):
         )
         serializer = GameSerializer(game)
         return Response(serializer.data)
+    
+    def update(self, request, pk):
+        # Just like in the retrieve method, we grab the Game object we 
+        # want from the database. Each of the next lines are setting the 
+        # fields on game to the values coming from the client, like in 
+        # the create method. After all the fields are set, the changes 
+        # are saved to the database.
+        """Handle PUT requests for a game
+
+        Returns:
+            Response -- Empty body with 204 status code
+        """
+
+        game = Game.objects.get(pk=pk)
+        game.title = request.data["title"]
+        game.maker = request.data["maker"]
+        game.number_of_players = request.data["number_of_players"]
+        game.skill_level = request.data["skill_level"]
+
+        game_type = GameType.objects.get(pk=request.data["game_type"])
+        game.game_type = game_type
+        game.save()
+
+        return Response(None, status=status.HTTP_204_NO_CONTENT)
+
 
 
 class GameSerializer(serializers.ModelSerializer):

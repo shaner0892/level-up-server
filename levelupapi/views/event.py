@@ -43,25 +43,51 @@ class EventView(ViewSet):
         Returns
             Response -- JSON serialized game instance
         """
-        organizer = Gamer.objects.get(user=request.auth.user)
+        organizer_id = Gamer.objects.get(user=request.auth.user)
         # Next, we retrieve the GameType object from the database. We do
         # this to make sure the game type the user is trying to add the
         # new game actually exists in the database. The data passed in
         # from the client is held in the request.data dictionary.
         # Whichever keys are used on the request.data must match what the
         # client is passing to the server.
-        game = Game.objects.get(pk=request.data["game"])
+        game_id = Game.objects.get(pk=request.data["game_id"])
 
         event = Event.objects.create(
-            game = game,
+            game = game_id,
             description = request.data["description"],
             date = request.data["date"],
             time = request.data["time"],
-            organizer = organizer
+            organizer = organizer_id
         )
 
         serializer = EventSerializer(event)
         return Response(serializer.data)
+    
+    def update(self, request, pk):
+        # Just like in the retrieve method, we grab the Game object we 
+        # want from the database. Each of the next lines are setting the 
+        # fields on game to the values coming from the client, like in 
+        # the create method. After all the fields are set, the changes 
+        # are saved to the database.
+        """Handle PUT requests for an event
+
+        Returns:
+            Response -- Empty body with 204 status code
+        """
+
+        event = Event.objects.get(pk=pk)
+        game = Game.objects.get(pk=pk)
+        event.game = game
+        event.description = request.data["description"]
+        event.date = request.data["date"]
+        event.time = request.data["time"]
+        organizer = Gamer.objects.get(pk=pk)
+        event.organizer = organizer
+        event.save()
+
+        return Response(None, status=status.HTTP_204_NO_CONTENT)
+
+
     
 class EventSerializer(serializers.ModelSerializer):
     """JSON serializer for game types
