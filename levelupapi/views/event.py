@@ -1,5 +1,6 @@
 """View module for handling requests about game types"""
 from django.http import HttpResponseServerError
+from django.core.exceptions import ValidationError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import serializers, status
@@ -43,25 +44,30 @@ class EventView(ViewSet):
         Returns
             Response -- JSON serialized game instance
         """
-        organizer_id = Gamer.objects.get(user=request.auth.user)
-        # Next, we retrieve the GameType object from the database. We do
-        # this to make sure the game type the user is trying to add the
-        # new game actually exists in the database. The data passed in
-        # from the client is held in the request.data dictionary.
-        # Whichever keys are used on the request.data must match what the
-        # client is passing to the server.
-        game_id = Game.objects.get(pk=request.data["game_id"])
+        organizer = Gamer.objects.get(user=request.auth.user)
+        # # Next, we retrieve the GameType object from the database. We do
+        # # this to make sure the game type the user is trying to add the
+        # # new game actually exists in the database. The data passed in
+        # # from the client is held in the request.data dictionary.
+        # # Whichever keys are used on the request.data must match what the
+        # # client is passing to the server.
+        # game_id = Game.objects.get(pk=request.data["game_id"])
 
-        event = Event.objects.create(
-            game = game_id,
-            description = request.data["description"],
-            date = request.data["date"],
-            time = request.data["time"],
-            organizer = organizer_id
-        )
+        # event = Event.objects.create(
+        #     game = game_id,
+        #     description = request.data["description"],
+        #     date = request.data["date"],
+        #     time = request.data["time"],
+        #     organizer = organizer_id
+        # )
 
-        serializer = EventSerializer(event)
-        return Response(serializer.data)
+        # serializer = EventSerializer(event)
+        # return Response(serializer.data)
+    
+        serializer = CreateEventSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(organizer=organizer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     def update(self, request, pk):
         # Just like in the retrieve method, we grab the Game object we 
@@ -76,12 +82,12 @@ class EventView(ViewSet):
         """
 
         event = Event.objects.get(pk=pk)
-        game = Game.objects.get(pk=pk)
+        game = Game.objects.get(pk=request.data["game"])
         event.game = game
         event.description = request.data["description"]
         event.date = request.data["date"]
         event.time = request.data["time"]
-        organizer = Gamer.objects.get(pk=pk)
+        organizer = Gamer.objects.get(user=request.auth.user)
         event.organizer = organizer
         event.save()
 
@@ -95,3 +101,8 @@ class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = ('id', 'game', 'description', 'date', 'time', 'organizer')
+        
+class CreateEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = ['id', 'game', 'description', 'date', 'time']
