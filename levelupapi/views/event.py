@@ -32,6 +32,7 @@ class EventView(ViewSet):
             Response -- JSON serialized list of game types
         """
         events = Event.objects.all()
+        gamer = Gamer.objects.get(user=request.auth.user)
         # Set the `joined` property on every event
         for event in events:
             # Check to see if the gamer is in the attendees list on the event
@@ -119,7 +120,7 @@ class EventView(ViewSet):
         gamer = Gamer.objects.get(user=request.auth.user)
         event = Event.objects.get(pk=pk)
         event.attendees.add(gamer)
-        # event.joined = True
+        event.joined = True
         return Response({'message': 'Gamer added'}, status=status.HTTP_201_CREATED)
     
     # Removes a gamer from an event
@@ -130,7 +131,7 @@ class EventView(ViewSet):
         gamer = Gamer.objects.get(user=request.auth.user)
         event = Event.objects.get(pk=pk)
         event.attendees.remove(gamer)
-        # event.joined = False
+        event.joined = False
         return Response({'message': 'Gamer removed'}, status=status.HTTP_204_NO_CONTENT)
     
     
